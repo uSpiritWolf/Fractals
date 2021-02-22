@@ -7,8 +7,7 @@
 
 #include "Logger/Logger.h"
 
-#include "Resources/fractalFrag.glsl.inl"
-#include "Resources/fractalVert.glsl.inl"
+#include "Resources/mandelbrot.glsl.inl"
 
 #include "imgui.h"
 
@@ -23,22 +22,21 @@ unsigned int indicesOfSquare[] = {
 	1, 2, 3    // second triangle of a square
 };
 
-math::vec2f	FractalsRender::s_defaultPosition = math::vec2f(-0.35209f, 0.09199f);
-float		FractalsRender::s_defaultZoom = 1 / 0.00017f;
+math::vec2f	FractalsRender::s_defaultPosition = math::vec2f(0.0f, 0.0f);
+float		FractalsRender::s_defaultZoom = 1;
+int			FractalsRender::s_defaultMaxIter = 512;
+float		FractalsRender::s_defaultThreshold = 65535;
 
 FractalsRender::FractalsRender()
 	: m_EBO(0)
 	, m_VAO(0)
 	, m_VBO(0)
-	, m_zoom(1.0f)
+	, m_zoom(s_defaultZoom)
 	, m_position(0.0f , 0.0f)
 	, m_windowSize()
 	, m_fractalsShader()
-	, m_animationtime(0.0f)
-	, m_enableAnimation(false)
-	, m_samples(5)
-	, m_threshold(4)
-	, m_maxIterations(512)
+	, m_threshold(s_defaultThreshold)
+	, m_maxIterations(s_defaultMaxIter)
 {
 	ResetLocation();
 }
@@ -86,22 +84,50 @@ void FractalsRender::Init()
 
 void FractalsRender::OnUpdate(float dt)
 {
-	if (m_enableAnimation)
+	UpdateGUI();
+	UpdateInput();
+	SetupShaderValue();
+}
+
+void FractalsRender::OnRender()
+{
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glLoadIdentity();
+
+	if (m_fractalsShader->IsValid())
 	{
-		m_animationtime += dt;
+		m_fractalsShader->Bind();
+
+		glBindVertexArray(m_VAO);
+		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+		glBindVertexArray(0);
+
+		m_fractalsShader->Unbind();
 	}
+}
 
-	ImGuiIO& io = ImGui::GetIO();
+void FractalsRender::OnWindowSizeChanged(const math::vec2f& newSize)
+{
+	m_windowSize = newSize;
+}
 
-	const ImGuiViewport* viewport = ImGui::GetMainViewport();
-	ImVec2 winSize = viewport->Size;
+void FractalsRender::ResetLocation()
+{
+	m_position			= s_defaultPosition;
+	m_zoom				= s_defaultZoom;
+	m_maxIterations		= s_defaultMaxIter;
+	m_threshold			= s_defaultThreshold;
+}
 
+void FractalsRender::UpdateGUI()
+{
 	{
 		const float PAD = 10.0f;
 		static int corner = 0;
 
-		ImVec2 workPos = viewport->WorkPos;
-		ImVec2 workSize = viewport->WorkSize;
+		const ImGuiViewport* viewport = ImGui::GetMainViewport();
+		const ImVec2 workPos = viewport->WorkPos;
+		const ImVec2 workSize = viewport->WorkSize;
 		ImVec2 windowPos, window_pos_pivot;
 		windowPos.x = (corner & 1) ? (workPos.x + workSize.x - PAD) : (workPos.x + PAD);
 		windowPos.y = (corner & 2) ? (workPos.y + workSize.y - PAD) : (workPos.y + PAD);
@@ -109,12 +135,12 @@ void FractalsRender::OnUpdate(float dt)
 		window_pos_pivot.y = (corner & 2) ? 1.0f : 0.0f;
 		ImGui::SetNextWindowPos(windowPos, ImGuiCond_Always, window_pos_pivot);
 
-		ImGuiWindowFlags overlay = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoMove;
+		const ImGuiWindowFlags overlay = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoMove;
 		ImGui::SetNextWindowBgAlpha(0.35f);
 		if (ImGui::Begin("Info", nullptr, overlay))
 		{
+			ImGuiIO& io = ImGui::GetIO();
 			ImGui::Text("Frametime %.3f ms (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
-			ImGui::Text("Animation Time: %.4f", m_animationtime);
 			ImGui::End();
 		}
 	}
@@ -124,31 +150,27 @@ void FractalsRender::OnUpdate(float dt)
 		ImGui::DragFloat("Zoom", &m_zoom, 2.f, 1.0f, 100000.0f);
 		ImGui::DragFloat2("X/Y", m_position.raw, 0.00001f, -1.0f, 1.0f, "%.7f");
 		ImGui::Separator();
-		ImGui::Checkbox("Enable Animation", &m_enableAnimation);
-		ImGui::PushItemWidth(150);
-		ImGui::SameLine(160);
-		if (ImGui::Button("Reset time"))
-		{
-			m_animationtime = 0.0f;
-		}
+		ImGui::SliderInt("Max Iterations", &m_maxIterations, 64, 4096);
+		ImGui::InputFloat("Threshold", &m_threshold);
 		ImGui::Separator();
-		if (ImGui::Button("Reset Location"))
+		if (ImGui::Button("Reset"))
 		{
 			ResetLocation();
 		}
-		ImGui::Separator();
-		ImGui::SliderInt("Samples", &m_samples, 1, 15);
-		ImGui::SliderInt("Threshold", &m_threshold, 1, 8);
-		ImGui::SliderInt("Max Iterations", &m_maxIterations, 64, 4096);
 		ImGui::End();
 	}
+}
 
-	if(!io.WantCaptureMouse)
+void FractalsRender::UpdateInput()
+{
+	ImGuiIO& io = ImGui::GetIO();
+
+	if (!io.WantCaptureMouse)
 	{
 		if (ImGui::IsMouseDragging(0))
 		{
-			ImVec2 dragDelta = ImGui::GetMouseDragDelta(0);
-			math::vec2f windowScale(2.0f / winSize.y, 2.0f / winSize.y);
+			const ImVec2 dragDelta = ImGui::GetMouseDragDelta(0);
+			const math::vec2f windowScale(2.f / m_windowSize.y, 2.f / m_windowSize.y);
 			m_offset = math::vec2f(dragDelta.x, -dragDelta.y) * (1.0f / m_zoom) * windowScale;
 		}
 		else
@@ -167,42 +189,23 @@ void FractalsRender::OnUpdate(float dt)
 			}
 		}
 	}
-
-	(*m_fractalsShader)["iResolution"] = m_windowSize;
-	(*m_fractalsShader)["iScale"] = 1.0f / m_zoom;
-	(*m_fractalsShader)["iPosition"] = m_position + m_offset;
-	(*m_fractalsShader)["iTime"] = m_animationtime;
-
-	(*m_fractalsShader)["iSamples"] = m_samples;
-	(*m_fractalsShader)["iThreshold"] = m_threshold;
-	(*m_fractalsShader)["iMaxIter"] = m_maxIterations;
 }
 
-void FractalsRender::OnRender()
+void FractalsRender::SetupShaderValue()
 {
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	glLoadIdentity();
-
-	m_fractalsShader->Bind();
-
-	glBindVertexArray(m_VAO);
-	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-	glBindVertexArray(0);
-
-	m_fractalsShader->Unbind();
-}
-
-void FractalsRender::OnWindowSizeChanged(const math::vec2f& newSize)
-{
-	m_windowSize = newSize;
-	if (m_fractalsShader)
+	if (m_fractalsShader->IsValid())
 	{
-		(*m_fractalsShader)["iResolution"] = m_windowSize;
-	}
-}
+		const ImGuiViewport* viewport = ImGui::GetMainViewport();
+		const ImVec2 winSize = viewport->Size;
 
-void FractalsRender::ResetLocation()
-{
-	m_position = s_defaultPosition;
-	m_zoom = s_defaultZoom;
+		(*m_fractalsShader)["iResolution"] = m_windowSize;
+		(*m_fractalsShader)["iScale"] = 1.0f / m_zoom;
+		(*m_fractalsShader)["iPosition"] = m_position + m_offset;
+		(*m_fractalsShader)["iThreshold"] = m_threshold;
+		if ((m_maxIterations % 2) > 0)
+		{
+			m_maxIterations += 1;
+		}
+		(*m_fractalsShader)["iMaxIter"] = m_maxIterations;
+	}
 }

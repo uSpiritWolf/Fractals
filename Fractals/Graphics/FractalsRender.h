@@ -22,6 +22,10 @@ private:
 
 	void ResetLocation();
 
+	void UpdateGUI();
+	void UpdateInput();
+	void SetupShaderValue();
+
 	GLuint m_VAO;
 	GLuint m_VBO;
 	GLuint m_EBO;
@@ -30,16 +34,14 @@ private:
 	math::vec2f m_position;
 	math::vec2f m_offset;
 	math::vec2f m_windowSize;
-	float m_animationtime;
 
-	int m_samples;
-	int m_threshold;
+	float m_threshold;
 	int m_maxIterations;
-
-	bool m_enableAnimation;
 
 	std::unique_ptr<Shader> m_fractalsShader;
 
 	static math::vec2f	s_defaultPosition;
 	static float		s_defaultZoom;
+	static int			s_defaultMaxIter;
+	static float		s_defaultThreshold;
 };
