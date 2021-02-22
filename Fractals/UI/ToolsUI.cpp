@@ -55,6 +55,7 @@ void ToolsUI::Update()
 			ImGui::SliderInt("Max Iterations", &config->m_maxIterations, 64, 4096);
 			ImGui::InputFloat("Threshold", &config->m_threshold);
 			ImGui::Separator();
+			ImGui::Checkbox("Enable Color", &config->m_color);
 			if (ImGui::Button("Reset"))
 			{
 				Reset();

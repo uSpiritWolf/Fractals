@@ -151,5 +151,6 @@ void FractalsRender::SetupShaderValue()
 		(*m_fractalsShader)["iPosition"] = m_mandelbrotConfig->m_position + m_mandelbrotConfig->m_offset;
 		(*m_fractalsShader)["iThreshold"] = m_mandelbrotConfig->m_threshold;
 		(*m_fractalsShader)["iMaxIter"] = m_mandelbrotConfig->m_maxIterations;
+		(*m_fractalsShader)["iColor"] = m_mandelbrotConfig->m_color;
 	}
 }

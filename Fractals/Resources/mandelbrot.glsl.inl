@@ -4,8 +4,6 @@ const GLchar* fractalFragmentShader = R"END(
 #pragma optionNV(fastmath off)
 #pragma optionNV(fastprecision off)
 
-precision highp float;
-
 out vec4 FragColor;
 
 uniform vec2	iResolution;
@@ -13,6 +11,7 @@ uniform float	iScale;
 uniform vec2	iPosition;
 uniform float	iThreshold;
 uniform int		iMaxIter;
+uniform bool	iColor;
 
 const int PALETTE_SIZE = 256;
 const int PALETTE[PALETTE_SIZE][3] = {
@@ -98,17 +97,35 @@ vec2 nextRand2()
 
 //
 
+// Z' -> 2·Z·Z' + 1
+vec2 dmandelbrot(vec2 z, vec2 dz)
+{
+	return 2.0*vec2(z.x*dz.x-z.y*dz.y, z.x*dz.y + z.y*dz.x) + vec2(1.0,0.0);
+}
+
+// Z -> Z² + c
 vec2 mandelbrot(vec2 z, vec2 c)
 {
 	return mat2( z, -z.y, z.x ) * z + c;
 	//return vec2(pow(z.x,2) - pow(z.y,2), 2 * z.x * z.y) + c;
 }
 
-float get_iterations_mandelbrot(out vec2 z, vec2 c)
+float get_iterations_mandelbrot(out vec2 outz, in vec2 c)
 {
+	#if 1
+	{
+		float c2 = dot(c, c);
+		// skip computation inside M1 - http://iquilezles.org/www/articles/mset_1bulb/mset1bulb.htm
+		if( 256.0*c2*c2 - 96.0*c2 + 32.0*c.x - 3.0 < 0.0 ) return 0.0;
+		// skip computation inside M2 - http://iquilezles.org/www/articles/mset_2bulb/mset2bulb.htm
+		if( 16.0*(c2+2.0*c.x+1.0) - 1.0 < 0.0 ) return 0.0;
+	}
+	#endif
+
 	//c = 2.5*(c - vec2(.2,0));
 	float iterations = 0;
 	
+	vec2 z = vec2(0);
 	while(iterations < iMaxIter) 
 	{
 		z = mandelbrot(z, c);
@@ -117,13 +134,13 @@ float get_iterations_mandelbrot(out vec2 z, vec2 c)
 		
 		++iterations;
 	}
-
+	
+	outz = z;
 	return iterations;
 }
 
 #define OFFSET_COLOR 84
-#define SAMPLES 5
-void draw( out vec4 fragColor, in vec2 fragCoord ) 
+void drawColor( out vec4 fragColor, in vec2 fragCoord ) 
 {
 	vec2 z = vec2(0);
 	vec2 c = iScale * ( 2. * fragCoord - iResolution)/iResolution.y - iPosition;
@@ -151,9 +168,68 @@ void draw( out vec4 fragColor, in vec2 fragCoord )
 	fragColor = vec4(r, g, b, 1.0f);
 }
 
+
+float get_distance_mandelbrot( in vec2 c )
+{
+	#if 1
+	{
+		float c2 = dot(c, c);
+		// skip computation inside M1 - http://iquilezles.org/www/articles/mset_1bulb/mset1bulb.htm
+		if( 256.0*c2*c2 - 96.0*c2 + 32.0*c.x - 3.0 < 0.0 ) return 0.0;
+		// skip computation inside M2 - http://iquilezles.org/www/articles/mset_2bulb/mset2bulb.htm
+		if( 16.0*(c2+2.0*c.x+1.0) - 1.0 < 0.0 ) return 0.0;
+	}
+	#endif
+
+	// iterate
+	float di =  1.0;
+	vec2 z  = vec2(0.0);
+	float m2 = 0.0;
+	vec2 dz = vec2(0.0);
+	for( int i=0; i<iMaxIter; i++ )
+	{
+		if( m2>iThreshold ) { di=0.0; break; }
+
+		// Z' -> 2·Z·Z' + 1
+		dz = 2.0*vec2(z.x*dz.x-z.y*dz.y, z.x*dz.y + z.y*dz.x) + vec2(1.0,0.0);
+			
+		// Z -> Z² + c			
+		z = vec2( z.x*z.x - z.y*z.y, 2.0*z.x*z.y ) + c;
+			
+		m2 = dot(z,z);
+	}
+
+	// distance	
+	// d(c) = |Z|·log|Z|/|Z'|
+	float d = 0.5*sqrt(dot(z,z)/dot(dz,dz))*log(dot(z,z));
+	if( di>0.5 ) d=0.0;
+	
+	return d;
+}
+
+void drawGray( out vec4 fragColor, in vec2 fragCoord )
+{
+	vec2 c = iScale * ( 2. * fragCoord - iResolution)/iResolution.y - iPosition;
+
+	float d = get_distance_mandelbrot(c);
+	
+	d = clamp( pow(4.0*d/iScale,0.2), 0.0, 1.0 );
+	
+	vec3 col = vec3(d);
+	
+	fragColor = vec4( col, 1.0 );
+}
+
 void main()
 {
-	draw(FragColor, gl_FragCoord.xy);
+	if(iColor)
+	{
+		drawColor(FragColor, gl_FragCoord.xy);
+	}
+	else
+	{
+		drawGray(FragColor, gl_FragCoord.xy);
+	}
 } 
 )END";
 
