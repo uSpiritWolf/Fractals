@@ -8,7 +8,8 @@ enum class UniformType
 	NONE,
 	FLOAT,
 	VEC2,
-	INT
+	INT,
+	DOUBLE
 };
 
 class Uniform
@@ -29,6 +30,7 @@ public:
 	bool IsValidLocation();
 
 	Uniform& operator=(float value);
+	Uniform& operator=(double value);
 	Uniform& operator=(int value);
 	Uniform& operator=(const math::vec2f& value);
 
@@ -42,6 +44,7 @@ private:
 		math::vec2f m_vec2Value;
 		float m_fValue;
 		int m_iValue;
+		double m_dValue;
 	};
 };
 
@@ -49,6 +52,13 @@ inline Uniform& Uniform::operator=(const float value)
 {
 	m_type = UniformType::FLOAT;
 	m_fValue = value;
+	return *this;
+}
+
+inline Uniform& Uniform::operator=(double value)
+{
+	m_type = UniformType::DOUBLE;
+	m_dValue = value;
 	return *this;
 }
 
@@ -74,6 +84,9 @@ inline void Uniform::Apply() const
 		break;
 	case UniformType::FLOAT:
 		glUniform1f(m_uniformLocation, m_fValue);
+		break;
+	case UniformType::DOUBLE:
+		glUniform1d(m_uniformLocation, m_dValue);
 		break;
 	case UniformType::INT:
 		glUniform1i(m_uniformLocation, m_iValue);
