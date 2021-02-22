@@ -23,4 +23,5 @@ private:
 	static float		s_defaultZoom;
 	static int			s_defaultMaxIter;
 	static float		s_defaultThreshold;
+	static bool			s_defaultColor;
 };

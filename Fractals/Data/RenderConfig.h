@@ -13,5 +13,5 @@ struct RenderConfig
 
 	bool m_color;
 
-	RenderConfig() : m_zoom(0), m_threshold(0), m_maxIterations(0), m_color(true){}
+	RenderConfig() : m_zoom(0), m_threshold(0), m_maxIterations(0), m_color(false){}
 };

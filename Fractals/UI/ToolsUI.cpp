@@ -6,6 +6,7 @@ math::vec2f	ToolsUI::s_defaultPosition = math::vec2f(0.0f, 0.0f);
 float		ToolsUI::s_defaultZoom = 1;
 int			ToolsUI::s_defaultMaxIter = 512;
 float		ToolsUI::s_defaultThreshold = 65535;
+bool		ToolsUI::s_defaultColor = true;
 
 ToolsUI::ToolsUI()
 {
@@ -73,6 +74,7 @@ void ToolsUI::Reset()
 		config->m_zoom = s_defaultZoom;
 		config->m_maxIterations = s_defaultMaxIter;
 		config->m_threshold = s_defaultThreshold;
+		config->m_color = s_defaultColor;
 	}
 }
 
