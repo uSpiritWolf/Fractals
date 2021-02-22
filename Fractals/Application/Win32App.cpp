@@ -121,7 +121,7 @@ void Win32App::InitImGui()
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
 	ImGui_ImplWin32_Init(m_mainWindow->GetHWND());
-	ImGui_ImplOpenGL3_Init("#version 330");
+	ImGui_ImplOpenGL3_Init("#version 450");
 	ImGui::StyleColorsDark();
 
 	m_mainWindow->SetWinProcHandle([](HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
