@@ -20,14 +20,18 @@ public:
 
 	Uniform& operator[](const std::string& nameUniform);
 
+	bool IsValid() const;
+
 private:
 
-	static GLuint CompileShader(const GLchar* const source, GLenum type);
-	static GLuint CompileProgramShader(const GLchar* const vertexShaderSource, const GLchar* const fragmentShaderSource);
+	GLuint CompileShader(const GLchar* const source, GLenum type);
+	void CompileProgramShader(const GLchar* const vertexShaderSource, const GLchar* const fragmentShaderSource);
 
 	GLuint m_programShader;
 
 	std::map<std::string, Uniform> m_uniforms;
+
+	bool m_isValid;
 };
 
 inline void Shader::Unbind()

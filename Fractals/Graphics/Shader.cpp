@@ -5,6 +5,7 @@
 
 Shader::Shader()
 	: m_programShader(0)
+	, m_isValid(false)
 {
 }
 
@@ -18,7 +19,7 @@ Shader::~Shader()
 
 void Shader::Load(const GLchar* const vertexShaderSource, const GLchar* const fragmentShaderSource)
 {
-	m_programShader = CompileProgramShader(vertexShaderSource, fragmentShaderSource);
+	CompileProgramShader(vertexShaderSource, fragmentShaderSource);
 }
 
 void Shader::Bind()
@@ -59,6 +60,11 @@ Uniform& Shader::operator[](const std::string& nameUniform)
 	return it->second;
 }
 
+bool Shader::IsValid() const
+{
+	return m_isValid;
+}
+
 GLuint Shader::CompileShader(const GLchar* const source, GLenum type)
 {
 	const GLint shader = glCreateShader(type);
@@ -66,6 +72,7 @@ GLuint Shader::CompileShader(const GLchar* const source, GLenum type)
 	if (!shader)
 	{
 		Logger::Log(LogLevel::ERR, "Cannot create a shader of type");
+		m_isValid = false;
 		return 0;
 	}
 
@@ -86,6 +93,7 @@ GLuint Shader::CompileShader(const GLchar* const source, GLenum type)
 			std::string error(errorLog.begin(), errorLog.end());
 
 			Logger::Log(LogLevel::ERR, "Cannot compile shader:\n" + error);
+			m_isValid = false;
 			return 0;
 		}
 	}
@@ -93,35 +101,48 @@ GLuint Shader::CompileShader(const GLchar* const source, GLenum type)
 	return shader;
 }
 
-GLuint Shader::CompileProgramShader(const GLchar* const vertexShaderSource, const GLchar * const fragmentShaderSource)
+void Shader::CompileProgramShader(const GLchar* const vertexShaderSource, const GLchar * const fragmentShaderSource)
 {
 	const GLint program = glCreateProgram();
 
 	if (!program)
 	{
 		Logger::Log(LogLevel::ERR, "Cannot create a shader program");
-		return 0;
+		m_isValid = false;
+		return;
 	}
 
 	GLuint vertexShader = CompileShader(vertexShaderSource, GL_VERTEX_SHADER);
 	GLuint fragmentShader = CompileShader(fragmentShaderSource, GL_FRAGMENT_SHADER);
 
-	glAttachShader(program, vertexShader);
-	glAttachShader(program, fragmentShader);
-	glLinkProgram(program);
-
-	glDeleteShader(vertexShader);
-	glDeleteShader(fragmentShader);
-
+	if (vertexShader && fragmentShader)
 	{
-		GLint linked;
-		glGetShaderiv(program, GL_LINK_STATUS, &linked);
-		if (!linked)
+		glAttachShader(program, vertexShader);
+		glAttachShader(program, fragmentShader);
+		glLinkProgram(program);
+
 		{
-			Logger::Log(LogLevel::ERR, "Cannot link shader program with shaders ");
-			return 0;
+			GLint linked;
+			glGetShaderiv(program, GL_LINK_STATUS, &linked);
+			if (!linked)
+			{
+				Logger::Log(LogLevel::ERR, "Cannot link shader program with shaders ");
+				m_isValid = false;
+				return;
+			}
 		}
+
+		m_programShader = program;
+		m_isValid = true;
 	}
 
-	return program;
+	if (vertexShader)
+	{
+		glDeleteShader(vertexShader);
+	}
+
+	if (fragmentShader)
+	{
+		glDeleteShader(fragmentShader);
+	}
 }
