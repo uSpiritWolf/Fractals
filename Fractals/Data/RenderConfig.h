@@ -14,9 +14,9 @@ struct RenderConfig
 	math::vec2f m_position;
 	math::vec2f m_offset;
 
-	bool m_color;
+	bool m_colorEnabled;
 
-	RenderConfig() : m_zoom(0), m_threshold(0), m_maxIterations(0), m_color(false), m_useCPU(false){}
+	RenderConfig() : m_zoom(0), m_threshold(0), m_maxIterations(0), m_colorEnabled(false), m_useCPU(false){}
 
 	bool operator==(const RenderConfig& rhs) const
 	{
@@ -27,7 +27,7 @@ struct RenderConfig
 			&& m_position == rhs.m_position
 			&& m_offset == rhs.m_offset
 			&& m_useCPU == rhs.m_useCPU
-			&& m_color == rhs.m_color;
+			&& m_colorEnabled == rhs.m_colorEnabled;
 	}
 
 	bool operator!=(const RenderConfig& rhs) const

@@ -53,7 +53,7 @@ void ToolsUI::Update()
 			ImGui::SliderInt("Max Iterations", &config->m_maxIterations, 64, 4096);
 			ImGui::InputFloat("Threshold", &config->m_threshold);
 			ImGui::Separator();
-			ImGui::Checkbox("Enable Color", &config->m_color);
+			ImGui::Checkbox("Enable Color", &config->m_colorEnabled);
 			ImGui::Checkbox("Use CPU instead of GPU", &config->m_useCPU);		
 			ImGui::SameLine();
 			ImGui::TextDisabled("(?)");
@@ -83,7 +83,7 @@ void ToolsUI::Reset()
 		config->m_zoom = s_defaultZoom;
 		config->m_maxIterations = s_defaultMaxIter;
 		config->m_threshold = s_defaultThreshold;
-		config->m_color = s_defaultColor;
+		config->m_colorEnabled = s_defaultColor;
 		config->m_useCPU = s_defaultUseCPU;
 	}
 }

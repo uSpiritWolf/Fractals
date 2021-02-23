@@ -65,7 +65,7 @@ void MandelbrotGPURender::OnUpdate()
 			(*m_fractalsShader)["iPosition"] = config->m_position + config->m_offset;
 			(*m_fractalsShader)["iThreshold"] = config->m_threshold;
 			(*m_fractalsShader)["iMaxIter"] = config->m_maxIterations;
-			(*m_fractalsShader)["iColor"] = config->m_color;
+			(*m_fractalsShader)["iColor"] = config->m_colorEnabled;
 		}
 	}
 }
