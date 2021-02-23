@@ -153,13 +153,12 @@ void drawColor( out vec4 fragColor, in vec2 fragCoord )
 	{
 		iter = 0.;
 	}
-
+	iter += OFFSET_COLOR;
 	float fraction = fract(iter);
-
-	const int it = int(floor(iter)) + OFFSET_COLOR;
+	const int it = int(floor(iter));
 
 	int[3] color1 = PALETTE[it % PALETTE_SIZE];
-	int[3] color2 = PALETTE[it % PALETTE_SIZE];
+	int[3] color2 = PALETTE[(it + 1) % PALETTE_SIZE];
 
 	float r = mix(color1[0]/255.f, color2[0]/255.f, fraction);
 	float g = mix(color1[1]/255.f, color2[1]/255.f, fraction);

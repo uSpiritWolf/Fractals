@@ -194,7 +194,7 @@ void MandelbrotCPURender::WorkerColorDraw(const RenderConfig& refConfig, const i
 			const double fraction = modf(iterations, &it);
 
 			const int* color1 = PALETTE[static_cast<size_t>(it) % PALETTE_SIZE];
-			const int* color2 = PALETTE[static_cast<size_t>(it) % PALETTE_SIZE];
+			const int* color2 = PALETTE[static_cast<size_t>(it + 1) % PALETTE_SIZE];
 			
 			const double r = std::lerp(color1[0], color2[0], fraction);
 			const double g = std::lerp(color1[1], color2[1], fraction);
