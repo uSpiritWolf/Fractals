@@ -88,6 +88,11 @@ namespace math
 		return vec2d(value.x, value.y);
 	}
 
+	inline vec2f toVec2f(const vec2d& value)
+	{
+		return vec2f(static_cast<float>(value.x), static_cast<float>(value.y));
+	}
+
 	template<class T>
 	inline T dot(const vec2<T> a, const vec2<T> b)
 	{

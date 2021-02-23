@@ -82,13 +82,13 @@ void FractalsRender::UpdateInput()
 		if (ImGui::IsMouseDragging(0))
 		{
 			const ImVec2 dragDelta = ImGui::GetMouseDragDelta(0);
-			const math::vec2f windowScale(2.f / m_mandelbrotConfig->m_windowSize.y, 2.f / m_mandelbrotConfig->m_windowSize.y);
-			m_mandelbrotConfig->m_offset = math::vec2f(dragDelta.x, -dragDelta.y) * (1.0f / m_mandelbrotConfig->m_zoom) * windowScale;
+			const math::vec2d windowScale(2. / m_mandelbrotConfig->m_windowSize.y, 2. / m_mandelbrotConfig->m_windowSize.y);
+			m_mandelbrotConfig->m_offset = math::vec2d(dragDelta.x, -dragDelta.y) * (1.0f / m_mandelbrotConfig->m_zoom) * windowScale;
 		}
 		else
 		{
 			m_mandelbrotConfig->m_position += m_mandelbrotConfig->m_offset;
-			m_mandelbrotConfig->m_offset = math::vec2f(.0f, .0f);
+			m_mandelbrotConfig->m_offset = math::vec2d(.0, .0);
 		}
 
 		if (io.MouseWheel != 0.0f)

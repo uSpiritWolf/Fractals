@@ -3,7 +3,7 @@
 
 #include "imgui.h"
 
-math::vec2f	ToolsUI::s_defaultPosition = math::vec2f(0.0f, 0.0f);
+math::vec2d	ToolsUI::s_defaultPosition = math::vec2d(0.0, 0.0);
 float		ToolsUI::s_defaultZoom = 1;
 int			ToolsUI::s_defaultMaxIter = 512;
 float		ToolsUI::s_defaultThreshold = 65535;
@@ -45,10 +45,13 @@ void ToolsUI::Update()
 	
 	if (std::shared_ptr<RenderConfig> config = DataBinder<RenderConfig>::GetData())
 	{
+		ImGui::SetNextWindowCollapsed(true, ImGuiCond_FirstUseEver);
 		if (ImGui::Begin("Tools", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
 		{
-			ImGui::DragFloat("Zoom", &config->m_zoom, 2.f, 1.0f, 100000.0f);
-			ImGui::DragFloat2("X/Y", config->m_position.raw, 0.00001f, -1.0f, 1.0f, "%.7f");
+			ImGui::InputDouble("X", &config->m_position.x, 0.0, 0.0, "%.15f");
+			ImGui::SameLine();
+			ImGui::InputDouble("Y", &config->m_position.y, 0.0, 0.0, "%.15f");
+			ImGui::InputFloat("Zoom", &config->m_zoom, 0.0, 0.0, "%.3f");
 			ImGui::Separator();
 			ImGui::SliderInt("Max Iterations", &config->m_maxIterations, 64, 4096);
 			ImGui::InputFloat("Threshold", &config->m_threshold);

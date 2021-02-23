@@ -11,8 +11,8 @@ struct RenderConfig
 	int m_maxIterations;
 
 	math::vec2f m_windowSize;
-	math::vec2f m_position;
-	math::vec2f m_offset;
+	math::vec2d m_position;
+	math::vec2d m_offset;
 
 	bool m_colorEnabled;
 

@@ -16,7 +16,7 @@ public:
 
 private:
 
-	static math::vec2f	s_defaultPosition;
+	static math::vec2d	s_defaultPosition;
 	static float		s_defaultZoom;
 	static int			s_defaultMaxIter;
 	static float		s_defaultThreshold;

@@ -133,7 +133,7 @@ void MandelbrotCPURender::WorkerColorDraw(const RenderConfig& refConfig, const i
 	const size_t width = static_cast<unsigned long long>(refConfig.m_windowSize.width);
 	const size_t height = static_cast<unsigned long long>(refConfig.m_windowSize.height);
 	const math::vec2d resolution = math::toVec2d(refConfig.m_windowSize);
-	const math::vec2d position = math::toVec2d(refConfig.m_position);
+	const math::vec2d position = refConfig.m_position;
 	const float threshold = refConfig.m_threshold;
 	const float logthreshold = std::log(threshold);
 	const int maxIterations = refConfig.m_maxIterations;

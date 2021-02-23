@@ -62,7 +62,7 @@ void MandelbrotGPURender::OnUpdate()
 		{
 			(*m_fractalsShader)["iResolution"] = config->m_windowSize;
 			(*m_fractalsShader)["iScale"] = 1.0f / config->m_zoom;
-			(*m_fractalsShader)["iPosition"] = config->m_position + config->m_offset;
+			(*m_fractalsShader)["iPosition"] = math::toVec2f(config->m_position + config->m_offset);
 			(*m_fractalsShader)["iThreshold"] = config->m_threshold;
 			(*m_fractalsShader)["iMaxIter"] = config->m_maxIterations;
 			(*m_fractalsShader)["iColor"] = config->m_colorEnabled;
