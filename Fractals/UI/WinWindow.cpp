@@ -272,14 +272,17 @@ LRESULT WinWindow::WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam
 		break;
 	case WM_SIZE:
 	{
-		math::vec2f newSize;
-		newSize.width = LOWORD(lParam);
-		newSize.height = HIWORD(lParam);
-		if (winWindow)
+		if (wParam != SIZE_MINIMIZED)
 		{
-			winWindow->m_onWindowSizeChanged(newSize);
+			math::vec2f newSize;
+			newSize.width = LOWORD(lParam);
+			newSize.height = HIWORD(lParam);
+			if (winWindow)
+			{
+				winWindow->m_onWindowSizeChanged(newSize);
+			}
+			glViewport(0, 0, static_cast<GLint>(newSize.width), static_cast<GLint>(newSize.height));
 		}
-		glViewport(0, 0, static_cast<GLint>(newSize.width), static_cast<GLint>(newSize.height));
 	}
 		break;
 	case WM_KEYDOWN:
