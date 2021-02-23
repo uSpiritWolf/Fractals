@@ -1,4 +1,4 @@
-#include "FracralsApplication.h"
+#include "FractalsApplication.h"
 
 #include "Logger/Logger.h"
 
@@ -8,17 +8,17 @@
 
 #include "Graphics/FractalsRender.h"
 
-FracralsApplication::FracralsApplication()
+FractalsApplication::FractalsApplication()
 	: m_app(new Win32App())
 	, m_fractalRender(new FractalsRender())
 {
 }
 
-FracralsApplication::~FracralsApplication()
+FractalsApplication::~FractalsApplication()
 {
 }
 
-void FracralsApplication::Init()
+void FractalsApplication::Init()
 {
 	Logger::Log(LogLevel::INFO, "Initialization");
 
@@ -34,8 +34,8 @@ void FracralsApplication::Init()
 		return;
 	}
 
-	m_app->SetUpdateCallback(std::bind(&FracralsApplication::OnUpdate, this, std::placeholders::_1));
-	m_app->SetRenderCallback(std::bind(&FracralsApplication::OnRender, this));
+	m_app->SetUpdateCallback(std::bind(&FractalsApplication::OnUpdate, this, std::placeholders::_1));
+	m_app->SetRenderCallback(std::bind(&FractalsApplication::OnRender, this));
 	m_app->SetWindowSizeChanged([this](const math::vec2f& newSize)
 	{
 		m_fractalRender->OnWindowSizeChanged(newSize);
@@ -46,7 +46,7 @@ void FracralsApplication::Init()
 	Logger::Log(LogLevel::INFO, "Initialization finished");
 }
 
-int FracralsApplication::Run()
+int FractalsApplication::Run()
 {
 	if (m_app == nullptr)
 	{
@@ -55,12 +55,12 @@ int FracralsApplication::Run()
 	return m_app->Run();
 }
 
-void FracralsApplication::OnUpdate(float dt)
+void FractalsApplication::OnUpdate(float dt)
 {
 	m_fractalRender->OnUpdate(dt);
 }
 
-void FracralsApplication::OnRender()
+void FractalsApplication::OnRender()
 {
 	m_fractalRender->OnRender();
 }

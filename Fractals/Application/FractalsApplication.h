@@ -5,13 +5,13 @@
 class IApp;
 class FractalsRender;
 
-class FracralsApplication
+class FractalsApplication
 {
 public:
 
-	FracralsApplication();
+	FractalsApplication();
 
-	~FracralsApplication();
+	~FractalsApplication();
 
 	void Init();
 
