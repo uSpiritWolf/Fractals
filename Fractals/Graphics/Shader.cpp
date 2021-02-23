@@ -123,16 +123,18 @@ void Shader::CompileProgramShader(const GLchar* const vertexShaderSource, const 
 
 		{
 			GLint linked;
-			glGetShaderiv(program, GL_LINK_STATUS, &linked);
+			glGetProgramiv(program, GL_LINK_STATUS, &linked);
 			if (!linked)
 			{
 				GLint maxLength = 0;
-				glGetShaderiv(program, GL_INFO_LOG_LENGTH, &maxLength);
+				glGetProgramiv(program, GL_INFO_LOG_LENGTH, &maxLength);
 
 				std::vector<GLchar> errorLog(maxLength);
-				glGetShaderInfoLog(program, maxLength, &maxLength, &errorLog[0]);
-				std::string error(errorLog.begin(), errorLog.end());
+				glGetProgramInfoLog(program, maxLength, &maxLength, &errorLog[0]);
 
+				glDeleteProgram(program);
+
+				std::string error(errorLog.begin(), errorLog.end());
 				Logger::Log(LogLevel::ERR, "Cannot link shader program with shaders:\n" + error);
 				m_isValid = false;
 				return;
