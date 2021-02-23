@@ -1,3 +1,4 @@
+
 #include "MandelbrotGPURender.h"
 #include "MandelbrotGPURender.h"
 
@@ -57,7 +58,7 @@ void MandelbrotGPURender::OnUpdate()
 {
 	if (m_fractalsShader->IsValid())
 	{
-		if (std::shared_ptr<RenderConfig> config = m_config.lock())
+		if (std::shared_ptr<RenderConfig> config = DataBinder<RenderConfig>::GetData())
 		{
 			(*m_fractalsShader)["iResolution"] = config->m_windowSize;
 			(*m_fractalsShader)["iScale"] = 1.0f / config->m_zoom;
@@ -81,14 +82,4 @@ void MandelbrotGPURender::OnRender()
 
 		m_fractalsShader->Unbind();
 	}
-}
-
-void MandelbrotGPURender::BindConfig(const std::weak_ptr<RenderConfig>& config)
-{
-	m_config = config;
-}
-
-void MandelbrotGPURender::ResetBind()
-{
-	m_config.reset();
 }

@@ -17,17 +17,6 @@ ToolsUI::~ToolsUI()
 {
 }
 
-void ToolsUI::BindConfig(const std::weak_ptr<RenderConfig>& config)
-{
-	m_config = config;
-	Reset();
-}
-
-void ToolsUI::ResetBind()
-{
-	m_config.reset();
-}
-
 void ToolsUI::Update()
 {
 	const float PAD = 10.0f;
@@ -52,7 +41,7 @@ void ToolsUI::Update()
 	}
 	ImGui::End();
 
-	if (std::shared_ptr<RenderConfig> config = m_config.lock())
+	if (std::shared_ptr<RenderConfig> config = DataBinder<RenderConfig>::GetData())
 	{
 		if (ImGui::Begin("Tools", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
 		{
@@ -74,7 +63,7 @@ void ToolsUI::Update()
 
 void ToolsUI::Reset()
 {
-	if (std::shared_ptr<RenderConfig> config = m_config.lock())
+	if (std::shared_ptr<RenderConfig> config = DataBinder<RenderConfig>::GetData())
 	{
 		config->m_position = s_defaultPosition;
 		config->m_zoom = s_defaultZoom;

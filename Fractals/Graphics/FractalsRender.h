@@ -1,14 +1,13 @@
 #pragma once
 
-#include <memory>
-
+#include "Data/DataProvider.h"
 #include "Math/vec.h"
 
 class MandelbrotGPURender;
 class ToolsUI;
 struct RenderConfig;
 
-class FractalsRender
+class FractalsRender : public DataProvider<RenderConfig>
 {
 public:
 

@@ -1,24 +1,20 @@
 #pragma once
 
-#include <memory>
+#include "Data/DataBinder.h"
 #include "Math/vec.h"
 
 struct RenderConfig;
 
-class ToolsUI
+class ToolsUI : public DataBinder<RenderConfig>
 {
 public:
 	ToolsUI();
 	~ToolsUI();
 
-	void BindConfig(const std::weak_ptr<RenderConfig>& config);
-	void ResetBind();
-
 	void Update();
-private:
 	void Reset();
 
-	std::weak_ptr<RenderConfig>	m_config;
+private:
 
 	static math::vec2f	s_defaultPosition;
 	static float		s_defaultZoom;

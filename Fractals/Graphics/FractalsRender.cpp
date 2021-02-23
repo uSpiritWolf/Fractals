@@ -9,7 +9,8 @@
 #include "Data/RenderConfig.h"
 
 FractalsRender::FractalsRender()
-	: m_mandelbrotConfig(new RenderConfig())
+	: DataProvider<RenderConfig>(m_mandelbrotConfig)
+	, m_mandelbrotConfig(new RenderConfig())
 	, m_mandelbrotGPURender(new MandelbrotGPURender())
 	, m_toolsUI(new ToolsUI())
 {
@@ -23,8 +24,9 @@ FractalsRender::~FractalsRender()
 
 void FractalsRender::Init()
 {
-	m_toolsUI->BindConfig(m_mandelbrotConfig);
-	m_mandelbrotGPURender->BindConfig(m_mandelbrotConfig);
+	ProvideData(*m_toolsUI);
+	ProvideData(*m_mandelbrotGPURender);
+	m_toolsUI->Reset();
 	m_mandelbrotGPURender->Init();
 }
 
