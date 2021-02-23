@@ -20,8 +20,9 @@ public:
 	void OnRender();
 
 private:
-
-	void Start();
+	void StartMainWorker();
+	void StopMainWorker();
+	void CleanupMainWorker();
 
 	void MainWorker(const RenderConfig copyConfig);
 	void Worker(const RenderConfig copyConfig, const int workerID, const int threadCount);
@@ -29,7 +30,7 @@ private:
 	std::thread m_mainThread;
 
 	std::atomic<bool> m_cancelRequested;
-	std::atomic<bool> m_finished;
+	std::atomic<bool> m_isBusy;
 
 	RenderConfig m_prevConfig;
 

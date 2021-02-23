@@ -4,7 +4,7 @@
 #include <gl/glew.h>
 
 MandelbrotCPURender::MandelbrotCPURender()
-	: m_finished(false)
+	: m_isBusy(false)
 	, m_cancelRequested(false)
 {
 
@@ -12,9 +12,10 @@ MandelbrotCPURender::MandelbrotCPURender()
 
 MandelbrotCPURender::~MandelbrotCPURender()
 {
-	if (m_mainThread.joinable())
+	if (m_isBusy.load(std::memory_order_relaxed) || m_mainThread.joinable())
 	{
-		m_mainThread.join();
+		StopMainWorker();
+		CleanupMainWorker();
 	}
 }
 
@@ -25,8 +26,19 @@ void MandelbrotCPURender::OnUpdate()
 		if (m_prevConfig != *config)
 		{
 			m_prevConfig = *config;
-			Start();
+			if (m_isBusy.load(std::memory_order_relaxed) || m_mainThread.joinable())
+			{
+				StopMainWorker();
+				CleanupMainWorker();
+			}
+
+			StartMainWorker();
 		}
+	}
+
+	if (!m_isBusy.load(std::memory_order_relaxed) && m_mainThread.joinable())
+	{
+		CleanupMainWorker();
 	}
 }
 
@@ -38,18 +50,11 @@ void MandelbrotCPURender::OnRender()
 	}
 }
 
-void MandelbrotCPURender::Start()
+void MandelbrotCPURender::StartMainWorker()
 {
-	// old
-	if (m_mainThread.joinable())
-	{
-		m_cancelRequested.store(true, std::memory_order_relaxed);
-		m_mainThread.join();
-	}
-
-	// new
 	m_cancelRequested.store(false, std::memory_order_relaxed);
-	m_finished.store(false, std::memory_order_relaxed);
+	m_isBusy.store(true, std::memory_order_relaxed);
+
 	if (std::shared_ptr<RenderConfig> config = GetData())
 	{
 		int width = static_cast<int>(config->m_windowSize.width);
@@ -63,14 +68,30 @@ void MandelbrotCPURender::Start()
 			m_data.reset(new unsigned char[m_sizeData]);
 		}
 
+		std::memset(m_data.get(), 0, m_sizeData);
 		m_mainThread = std::thread(&MandelbrotCPURender::MainWorker, this, *config);
 	}
+}
+
+void MandelbrotCPURender::StopMainWorker()
+{
+	m_cancelRequested.store(true, std::memory_order_relaxed);
+
+}
+
+void MandelbrotCPURender::CleanupMainWorker()
+{
+	if (m_mainThread.joinable())
+	{
+		m_mainThread.join();
+	}
+	m_cancelRequested.store(false, std::memory_order_relaxed);
+	m_isBusy.store(false, std::memory_order_relaxed);
 }
 
 void MandelbrotCPURender::MainWorker(const RenderConfig copyConfig)
 {
 	const int maxThread = std::thread::hardware_concurrency() - 1;
-	std::memset(m_data.get(), 0, m_sizeData);
 	std::vector<std::thread> poolThread;
 	for (int i = 0; i < maxThread; ++i)
 	{
@@ -81,7 +102,6 @@ void MandelbrotCPURender::MainWorker(const RenderConfig copyConfig)
 		th.join();
 	}
 	poolThread.clear();
-	m_finished.store(true, std::memory_order_relaxed);
 }
 
 void MandelbrotCPURender::Worker(const RenderConfig copyConfig, const int workerID, const int threadCount)
