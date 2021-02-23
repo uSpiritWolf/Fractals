@@ -8,6 +8,7 @@ float		ToolsUI::s_defaultZoom = 1;
 int			ToolsUI::s_defaultMaxIter = 512;
 float		ToolsUI::s_defaultThreshold = 65535;
 bool		ToolsUI::s_defaultColor = true;
+bool		ToolsUI::s_defaultUseCPU = false;
 
 ToolsUI::ToolsUI()
 {
@@ -52,6 +53,8 @@ void ToolsUI::Update()
 			ImGui::InputFloat("Threshold", &config->m_threshold);
 			ImGui::Separator();
 			ImGui::Checkbox("Enable Color", &config->m_color);
+			ImGui::SameLine();
+			ImGui::Checkbox("Use CPU", &config->m_useCPU);
 			if (ImGui::Button("Reset"))
 			{
 				Reset();
@@ -70,6 +73,7 @@ void ToolsUI::Reset()
 		config->m_maxIterations = s_defaultMaxIter;
 		config->m_threshold = s_defaultThreshold;
 		config->m_color = s_defaultColor;
+		config->m_useCPU = s_defaultUseCPU;
 	}
 }
 

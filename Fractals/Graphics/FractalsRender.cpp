@@ -1,5 +1,6 @@
 #include "FractalsRender.h"
 #include "MandelbrotGPURender.h"
+#include "MandelbrotCPURender.h"
 
 #include "Logger/Logger.h"
 
@@ -12,6 +13,7 @@ FractalsRender::FractalsRender()
 	: DataProvider<RenderConfig>(m_mandelbrotConfig)
 	, m_mandelbrotConfig(new RenderConfig())
 	, m_mandelbrotGPURender(new MandelbrotGPURender())
+	, m_mandelbrotCPURender(new MandelbrotCPURender())
 	, m_toolsUI(new ToolsUI())
 {
 }
@@ -26,6 +28,7 @@ void FractalsRender::Init()
 {
 	ProvideData(*m_toolsUI);
 	ProvideData(*m_mandelbrotGPURender);
+	ProvideData(*m_mandelbrotCPURender);
 	m_toolsUI->Reset();
 	m_mandelbrotGPURender->Init();
 }
@@ -41,7 +44,14 @@ void FractalsRender::OnRender()
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glLoadIdentity();
 
-	m_mandelbrotGPURender->OnRender();
+	if (m_mandelbrotConfig->m_useCPU)
+	{
+		m_mandelbrotCPURender->OnRender();
+	}
+	else
+	{
+		m_mandelbrotGPURender->OnRender();
+	}
 }
 
 void FractalsRender::OnWindowSizeChanged(const math::vec2f& newSize)
@@ -52,7 +62,15 @@ void FractalsRender::OnWindowSizeChanged(const math::vec2f& newSize)
 void FractalsRender::UpdateGUI()
 {
 	m_toolsUI->Update();
-	m_mandelbrotGPURender->OnUpdate();
+
+	if (m_mandelbrotConfig->m_useCPU)
+	{
+		m_mandelbrotCPURender->OnUpdate();
+	}
+	else
+	{
+		m_mandelbrotGPURender->OnUpdate();
+	}
 }
 
 void FractalsRender::UpdateInput()
