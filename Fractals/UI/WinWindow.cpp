@@ -50,8 +50,7 @@ void WinWindow::Init()
 	}
 
 	glShadeModel(GL_SMOOTH);
-	glEnable(GL_DEPTH_TEST);
-	glDepthFunc(GL_LEQUAL);
+	glDisable(GL_DEPTH_TEST);
 	glClearColor(0.f, 0.f, 0.f, 1.f);
 }
 
