@@ -15,7 +15,7 @@
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 Win32App::Win32App()
-	: m_mainWindow(new WinWindow(GetModuleHandle(NULL), L"Mandelbrot", 1280, 720))
+	: m_mainWindow(new WinWindow(GetModuleHandle(NULL), L"Fractals", 1280, 720))
 	, m_frameTime(33)
 	, m_onUpdate(nullptr)
 	, m_onRender(nullptr)
