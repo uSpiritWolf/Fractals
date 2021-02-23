@@ -39,6 +39,7 @@ void ToolsUI::Update()
 	{
 		ImGuiIO& io = ImGui::GetIO();
 		ImGui::Text("Frametime %.3f ms (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
+		ImGui::Text("Window/Fullscreen - F11");
 	}
 	ImGui::End();
 	
@@ -53,9 +54,7 @@ void ToolsUI::Update()
 			ImGui::InputFloat("Threshold", &config->m_threshold);
 			ImGui::Separator();
 			ImGui::Checkbox("Enable Color", &config->m_color);
-			ImGui::SameLine();
-			ImGui::Checkbox("Use CPU instead of GPU", &config->m_useCPU);
-			
+			ImGui::Checkbox("Use CPU instead of GPU", &config->m_useCPU);		
 			ImGui::SameLine();
 			ImGui::TextDisabled("(?)");
 			if (ImGui::IsItemHovered())
