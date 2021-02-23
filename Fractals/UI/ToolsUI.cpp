@@ -43,8 +43,8 @@ void ToolsUI::Update()
 	{
 		ImGuiIO& io = ImGui::GetIO();
 		ImGui::Text("Frametime %.3f ms (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
-		ImGui::End();
 	}
+	ImGui::End();
 
 	if (std::shared_ptr<RenderConfig> config = m_config.lock())
 	{
@@ -61,8 +61,8 @@ void ToolsUI::Update()
 			{
 				Reset();
 			}
-			ImGui::End();
 		}
+		ImGui::End();
 	}
 }
 
