@@ -41,7 +41,7 @@ void ToolsUI::Update()
 		ImGui::Text("Frametime %.3f ms (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
 	}
 	ImGui::End();
-
+	
 	if (std::shared_ptr<RenderConfig> config = DataBinder<RenderConfig>::GetData())
 	{
 		if (ImGui::Begin("Tools", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
@@ -54,7 +54,19 @@ void ToolsUI::Update()
 			ImGui::Separator();
 			ImGui::Checkbox("Enable Color", &config->m_color);
 			ImGui::SameLine();
-			ImGui::Checkbox("Use CPU", &config->m_useCPU);
+			ImGui::Checkbox("Use CPU instead of GPU", &config->m_useCPU);
+			
+			ImGui::SameLine();
+			ImGui::TextDisabled("(?)");
+			if (ImGui::IsItemHovered())
+			{
+				ImGui::BeginTooltip();
+				ImGui::PushTextWrapPos(ImGui::GetFontSize() * 35.0f);
+				ImGui::TextUnformatted("Very slow, but can increase detail at very large zoom.\n\nThe floating-point computation precision on the GPU may be less than CPU.");
+				ImGui::PopTextWrapPos();
+				ImGui::EndTooltip();
+			}
+
 			if (ImGui::Button("Reset"))
 			{
 				Reset();
