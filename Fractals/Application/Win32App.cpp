@@ -1,9 +1,10 @@
 #if defined(WIN32)
 
 #include "Win32App.h"
-#include <Windows.h>
-
 #include "UI/WinWindow.h"
+
+#include <string>
+
 #include "Graphics/FractalsRender.h"
 #include "Logger/Logger.h"
 

@@ -1,4 +1,5 @@
 #include "ToolsUI.h"
+#include "Data/RenderConfig.h"
 
 #include "imgui.h"
 
@@ -20,6 +21,11 @@ void ToolsUI::BindConfig(const std::weak_ptr<RenderConfig>& config)
 {
 	m_config = config;
 	Reset();
+}
+
+void ToolsUI::ResetBind()
+{
+	m_config.reset();
 }
 
 void ToolsUI::Update()

@@ -3,7 +3,6 @@
 #include "IWindow.h"
 
 #include <Windows.h>
-#include <map>
 
 class WinWindow : public IWindow
 {

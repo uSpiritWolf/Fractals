@@ -2,9 +2,9 @@
 
 #include <memory>
 
-#include "Shader.h"
 #include "Math/vec.h"
 
+class MandelbrotGPURender;
 class ToolsUI;
 struct RenderConfig;
 
@@ -25,17 +25,9 @@ public:
 private:
 	void UpdateGUI();
 	void UpdateInput();
-	void SetupShaderValue();
-
-	GLuint m_VAO;
-	GLuint m_VBO;
-	GLuint m_EBO;
-
-	math::vec2f m_windowSize;
-
-	std::unique_ptr<Shader> m_fractalsShader;
 
 	std::shared_ptr<RenderConfig> m_mandelbrotConfig;
+	std::unique_ptr<MandelbrotGPURender> m_mandelbrotGPURender;
 
 	std::unique_ptr<ToolsUI> m_toolsUI;
 };

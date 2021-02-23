@@ -40,6 +40,19 @@ void WinWindow::Init()
 		CenterWindow();
 		UpdateWindow(m_hndl);
 	}
+
+	GLenum err = glewInit();
+	if (GLEW_OK != err)
+	{
+		const char* str = reinterpret_cast<const char*>(glewGetErrorString(err));
+		m_errorCode = ErrorCode::ERR_GLEW;
+		m_errorString = "glewInit failed: " + std::string(str);
+	}
+
+	glShadeModel(GL_SMOOTH);
+	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LEQUAL);
+	glClearColor(0.f, 0.f, 0.f, 1.f);
 }
 
 void WinWindow::Destroy()

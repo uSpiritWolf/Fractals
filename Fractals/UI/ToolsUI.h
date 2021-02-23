@@ -1,9 +1,9 @@
 #pragma once
 
 #include <memory>
-
-#include "Data/RenderConfig.h"
 #include "Math/vec.h"
+
+struct RenderConfig;
 
 class ToolsUI
 {
@@ -12,6 +12,7 @@ public:
 	~ToolsUI();
 
 	void BindConfig(const std::weak_ptr<RenderConfig>& config);
+	void ResetBind();
 
 	void Update();
 private:

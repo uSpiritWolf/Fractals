@@ -15,7 +15,8 @@ public:
 		NONE,
 		ERR_SYSCALL,
 		ERR_GL,
-		ERR_SWAPBUFFER
+		ERR_SWAPBUFFER,
+		ERR_GLEW
 	};
 
 	virtual void Init() = 0;

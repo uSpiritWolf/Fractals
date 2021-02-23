@@ -8,6 +8,7 @@ struct RenderConfig
 	float m_threshold;
 	int m_maxIterations;
 
+	math::vec2f m_windowSize;
 	math::vec2f m_position;
 	math::vec2f m_offset;
 
