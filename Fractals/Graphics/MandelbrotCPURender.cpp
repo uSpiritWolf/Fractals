@@ -223,5 +223,5 @@ void MandelbrotCPURender::MakeBufferData(size_t size)
 {
 	m_maxSizeData = size;
 	m_bufferData.reset(new unsigned char[size]);
-	std::memset(m_bufferData.get(), 0, m_sizeData);
+	std::memset(m_bufferData.get(), 0, m_maxSizeData);
 }
