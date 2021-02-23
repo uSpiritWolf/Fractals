@@ -168,8 +168,7 @@ void MandelbrotCPURender::WorkerColorDraw(const RenderConfig& refConfig, const i
 				while (iterations <= maxIterations)
 				{
 					// Z -> Z² + c
-					z = math::vec2d(z.x * z.x - z.y * z.y, 2 * z.x * z.y);
-					z += c;
+					z = math::vec2d(z.x * z.x - z.y * z.y + c.x, 2 * z.x * z.y + c.y);
 					//
 
 					lastDotProduct = math::dot(z, z);
