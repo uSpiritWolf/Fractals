@@ -41,6 +41,7 @@ void WinWindow::Init()
 		UpdateWindow(m_hndl);
 	}
 
+	glewExperimental = GL_TRUE;
 	GLenum err = glewInit();
 	if (GLEW_OK != err)
 	{
@@ -52,6 +53,7 @@ void WinWindow::Init()
 	glShadeModel(GL_SMOOTH);
 	glDisable(GL_DEPTH_TEST);
 	glClearColor(0.f, 0.f, 0.f, 1.f);
+	glClearColor(0.25f, 0.25f, 0.25f, 1.0f);
 }
 
 void WinWindow::Destroy()
