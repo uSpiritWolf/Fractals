@@ -1,11 +1,22 @@
 #include "MandelbrotCPURender.h"
 
+#include <stdexcept>
 #include <cmath>
 #include <gl/glew.h>
+
+#include "Palette.h"
+
+const size_t MandelbrotCPURender::s_sizeofRGBA = 4;
+const size_t MandelbrotCPURender::s_offesetR = 0;
+const size_t MandelbrotCPURender::s_offesetG = 1;
+const size_t MandelbrotCPURender::s_offesetB = 2;
+const size_t MandelbrotCPURender::s_offesetA = 3;
 
 MandelbrotCPURender::MandelbrotCPURender()
 	: m_isBusy(false)
 	, m_cancelRequested(false)
+	, m_sizeData(0)
+	, m_maxSizeData(0)
 {
 
 }
@@ -44,9 +55,11 @@ void MandelbrotCPURender::OnUpdate()
 
 void MandelbrotCPURender::OnRender()
 {
-	if (m_data)
+	if (m_bufferData)
 	{
-		glDrawPixels(m_currentResolution.width, m_currentResolution.height, GL_RGB, GL_UNSIGNED_BYTE, m_data.get());
+		glRasterPos2f(-1.f, -1.f);
+		glDrawPixels(m_currentResolution.width, m_currentResolution.height, GL_RGBA, GL_UNSIGNED_BYTE, m_bufferData.get());
+		glFlush();
 	}
 }
 
@@ -57,18 +70,17 @@ void MandelbrotCPURender::StartMainWorker()
 
 	if (std::shared_ptr<RenderConfig> config = GetData())
 	{
-		int width = static_cast<int>(config->m_windowSize.width);
-		int height = static_cast<int>(config->m_windowSize.height);
-
-		if (width != m_currentResolution.width || height != m_currentResolution.height)
+		m_currentResolution.width = static_cast<int>(config->m_windowSize.width);
+		m_currentResolution.height = static_cast<int>(config->m_windowSize.height);
+		m_sizeData = s_sizeofRGBA * m_currentResolution.width * m_currentResolution.height;
+		if (m_maxSizeData < m_sizeData)
 		{
-			m_currentResolution.width = width;
-			m_currentResolution.height = height;
-			m_sizeData = static_cast<size_t>(3) * m_currentResolution.width * m_currentResolution.height;
-			m_data.reset(new unsigned char[m_sizeData]);
+			MakeBufferData(m_sizeData);
 		}
-
-		std::memset(m_data.get(), 0, m_sizeData);
+		else
+		{
+			std::memset(m_bufferData.get(), 0, m_sizeData);
+		}
 		m_mainThread = std::thread(&MandelbrotCPURender::MainWorker, this, *config);
 	}
 }
@@ -95,34 +107,36 @@ void MandelbrotCPURender::MainWorker(const RenderConfig copyConfig)
 	std::vector<std::thread> poolThread;
 	for (int i = 0; i < maxThread; ++i)
 	{
-		poolThread.emplace_back(std::thread(&MandelbrotCPURender::Worker, this, copyConfig, i, maxThread));
+		poolThread.emplace_back(std::thread(&MandelbrotCPURender::Worker, this, std::ref(copyConfig), i, maxThread));
 	}
 	for (std::thread& th : poolThread)
 	{
 		th.join();
 	}
 	poolThread.clear();
+	m_isBusy.store(false, std::memory_order_relaxed);
 }
 
-void MandelbrotCPURender::Worker(const RenderConfig copyConfig, const int workerID, const int threadCount)
+void MandelbrotCPURender::Worker(const RenderConfig& refConfig, const int workerID, const int threadCount)
 {
-	float scale = 1.0f / copyConfig.m_zoom;
-	unsigned long long width = static_cast<unsigned long long>(copyConfig.m_windowSize.width);
-	unsigned long long height = static_cast<unsigned long long>(copyConfig.m_windowSize.height);
-	math::vec2d resolution = math::toVec2d(copyConfig.m_windowSize);
-	math::vec2d position = math::toVec2d(copyConfig.m_position);
-	float threshold = copyConfig.m_threshold;
-	float maxIterations = static_cast<float>(copyConfig.m_maxIterations);
+	const double scale = 1.0 / refConfig.m_zoom;
+	const size_t width = static_cast<unsigned long long>(refConfig.m_windowSize.width);
+	const size_t height = static_cast<unsigned long long>(refConfig.m_windowSize.height);
+	const math::vec2d resolution = math::toVec2d(refConfig.m_windowSize);
+	const math::vec2d position = math::toVec2d(refConfig.m_position);
+	const float threshold = refConfig.m_threshold;
+	const float maxIterations = static_cast<float>(refConfig.m_maxIterations);
 
-	bool canceled = m_cancelRequested.load(std::memory_order_relaxed);
-	for (int y = workerID; y < height && !canceled; y += threadCount)
+	bool canceled = false;
+
+	for (size_t y = workerID; y < height; y += threadCount)
 	{
-		for (int x = 0; x < width && !canceled; ++x)
-		{
-			if (canceled = m_cancelRequested.load(std::memory_order_relaxed))
-				break;
+		if (canceled = m_cancelRequested.load(std::memory_order_relaxed))
+			break;
 
-			math::vec2d coord(x, y);
+		for (size_t x = 0; x < width; ++x)
+		{
+			math::vec2d coord(static_cast<double>(x), static_cast<double>(y));
 
 			math::vec2d c = scale * (2. * coord - resolution) / resolution.y - position;
 			math::vec2d z;
@@ -139,7 +153,7 @@ void MandelbrotCPURender::Worker(const RenderConfig copyConfig, const int worker
 			}
 			else
 			{
-				while (!canceled && iterations <= maxIterations)
+				while (iterations <= maxIterations)
 				{
 					// Z -> Z² + c
 					z = math::vec2d(std::pow(z.x, 2) - std::pow(z.y, 2), 2 * z.x * z.y) + c;
@@ -151,15 +165,63 @@ void MandelbrotCPURender::Worker(const RenderConfig copyConfig, const int worker
 				}
 			}
 
-			unsigned long long pos = (x + y * width) * 3;
-			m_data[pos + 0] = 0; // R
-			m_data[pos + 1] = static_cast<unsigned char>((iterations / maxIterations) * 255); // G
-			m_data[pos + 2] = 0; // B
+			if (iterations < maxIterations) 
+			{
+				iterations += 1 - std::log(math::dot(z, z)) / std::log(threshold);
+			}
+			else
+			{
+				iterations = 0;
+			}
+
+			iterations += OFFSET_COLOR;
+			double it = 0.0;
+			const double fraction = modf(iterations, &it);
+
+			const int* color1 = PALETTE[static_cast<size_t>(it) % PALETTE_SIZE];
+			const int* color2 = PALETTE[static_cast<size_t>(it) % PALETTE_SIZE];
+			
+			const double r = std::lerp(color1[0], color2[0], fraction);
+			const double g = std::lerp(color1[1], color2[1], fraction);
+			const double b = std::lerp(color1[2], color2[2], fraction);
+
+			if (x > width)
+			{
+				throw std::out_of_range("x position is invalid");
+			}
+
+			if (y > height)
+			{
+				throw std::out_of_range("y position is invalid");
+			}
+
+			const size_t pos = (x + y * width) * s_sizeofRGBA;
+
+			if ((pos + s_offesetA) < m_sizeData && (pos + s_offesetA) < m_maxSizeData)
+			{
+				m_bufferData[pos + s_offesetR] = static_cast<unsigned char>(std::round(r));
+				m_bufferData[pos + s_offesetG] = static_cast<unsigned char>(std::round(g));
+				m_bufferData[pos + s_offesetB] = static_cast<unsigned char>(std::round(b));
+				m_bufferData[pos + s_offesetA] = 255;
+			}
+			else
+			{
+				throw std::out_of_range("position is invalid");
+			}
+
+			
 		}
 	}
 
 	if (canceled)
 	{
-		std::memset(m_data.get(), 0, m_sizeData);
+		std::memset(m_bufferData.get(), 0, m_sizeData);
 	}
+}
+
+void MandelbrotCPURender::MakeBufferData(size_t size)
+{
+	m_maxSizeData = size;
+	m_bufferData.reset(new unsigned char[size]);
+	std::memset(m_bufferData.get(), 0, m_sizeData);
 }

@@ -25,7 +25,9 @@ private:
 	void CleanupMainWorker();
 
 	void MainWorker(const RenderConfig copyConfig);
-	void Worker(const RenderConfig copyConfig, const int workerID, const int threadCount);
+	void Worker(const RenderConfig& refConfig, const int workerID, const int threadCount);
+
+	void MakeBufferData(size_t size);
 
 	std::thread m_mainThread;
 
@@ -35,6 +37,14 @@ private:
 	RenderConfig m_prevConfig;
 
 	math::vec2i m_currentResolution;
+
 	size_t m_sizeData;
-	std::unique_ptr<unsigned char[]> m_data;
+	size_t m_maxSizeData;
+	std::unique_ptr<unsigned char[]> m_bufferData;
+
+	static const size_t s_sizeofRGBA;
+	static const size_t s_offesetR;
+	static const size_t s_offesetG;
+	static const size_t s_offesetB;
+	static const size_t s_offesetA;
 };

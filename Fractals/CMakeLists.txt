@@ -26,4 +26,6 @@ if(MSVC)
 	set_property(TARGET Fractals PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 endif()
 
+set_property(TARGET Fractals PROPERTY CXX_STANDARD 20)
+
 target_link_libraries(Fractals OpenGL::GL OpenGL::GLU GLEW::glew_s imgui::imgui)
