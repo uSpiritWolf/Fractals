@@ -25,7 +25,9 @@ struct RenderConfig
 			&& m_maxIterations == rhs.m_maxIterations
 			&& m_windowSize == rhs.m_windowSize
 			&& m_position == rhs.m_position
-			&& m_offset == rhs.m_offset;
+			&& m_offset == rhs.m_offset
+			&& m_useCPU == rhs.m_useCPU
+			&& m_color == rhs.m_color;
 	}
 
 	bool operator!=(const RenderConfig& rhs) const

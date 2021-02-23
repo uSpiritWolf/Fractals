@@ -145,7 +145,7 @@ void drawColor( out vec4 fragColor, in vec2 fragCoord )
 	vec2 z = vec2(0);
 	vec2 c = iScale * ( 2. * fragCoord - iResolution)/iResolution.y - iPosition;
 	float iter = get_iterations_mandelbrot(z, c);
-	if (iter < iMaxIter)
+	if (iter != 0 && iter < iMaxIter)
 	{
 		iter += 1. - log(z.x * z.x + z.y * z.y) / log(iMaxIter);
 	}

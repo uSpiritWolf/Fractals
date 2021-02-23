@@ -6,11 +6,10 @@
 
 #include "Palette.h"
 
-const size_t MandelbrotCPURender::s_sizeofRGBA = 4;
+const size_t MandelbrotCPURender::s_sizeofRGB = 3;
 const size_t MandelbrotCPURender::s_offesetR = 0;
 const size_t MandelbrotCPURender::s_offesetG = 1;
 const size_t MandelbrotCPURender::s_offesetB = 2;
-const size_t MandelbrotCPURender::s_offesetA = 3;
 
 MandelbrotCPURender::MandelbrotCPURender()
 	: m_isBusy(false)
@@ -37,13 +36,16 @@ void MandelbrotCPURender::OnUpdate()
 		if (m_prevConfig != *config)
 		{
 			m_prevConfig = *config;
-			if (m_isBusy.load(std::memory_order_relaxed) || m_mainThread.joinable())
+			if (IsBusy())
 			{
 				StopMainWorker();
 				CleanupMainWorker();
 			}
 
-			StartMainWorker();
+			if (config->m_useCPU)
+			{
+				StartMainWorker();
+			}
 		}
 	}
 
@@ -58,21 +60,25 @@ void MandelbrotCPURender::OnRender()
 	if (m_bufferData)
 	{
 		glRasterPos2f(-1.f, -1.f);
-		glDrawPixels(m_currentResolution.width, m_currentResolution.height, GL_RGBA, GL_UNSIGNED_BYTE, m_bufferData.get());
+		glPixelStoref(GL_PACK_ALIGNMENT, 1);
+		glPixelStoref(GL_UNPACK_ALIGNMENT, 1);
+		glDrawPixels(m_currentResolution.width, m_currentResolution.height, GL_RGB, GL_UNSIGNED_BYTE, m_bufferData.get());
 		glFlush();
 	}
 }
 
+bool MandelbrotCPURender::IsBusy() const
+{
+	return m_mainThread.joinable() || m_isBusy.load(std::memory_order_relaxed);
+}
+
 void MandelbrotCPURender::StartMainWorker()
 {
-	m_cancelRequested.store(false, std::memory_order_relaxed);
-	m_isBusy.store(true, std::memory_order_relaxed);
-
 	if (std::shared_ptr<RenderConfig> config = GetData())
 	{
-		m_currentResolution.width = static_cast<int>(config->m_windowSize.width);
-		m_currentResolution.height = static_cast<int>(config->m_windowSize.height);
-		m_sizeData = s_sizeofRGBA * m_currentResolution.width * m_currentResolution.height;
+		int width = static_cast<int>(config->m_windowSize.width);
+		int height = static_cast<int>(config->m_windowSize.height);
+		m_sizeData = s_sizeofRGB * width * height;
 		if (m_maxSizeData < m_sizeData)
 		{
 			MakeBufferData(m_sizeData);
@@ -81,14 +87,18 @@ void MandelbrotCPURender::StartMainWorker()
 		{
 			std::memset(m_bufferData.get(), 0, m_sizeData);
 		}
+		m_currentResolution.width = width;
+		m_currentResolution.height = height;
+
+		m_cancelRequested.store(false, std::memory_order_relaxed);
 		m_mainThread = std::thread(&MandelbrotCPURender::MainWorker, this, *config);
+		m_isBusy.store(true, std::memory_order_relaxed);
 	}
 }
 
 void MandelbrotCPURender::StopMainWorker()
 {
 	m_cancelRequested.store(true, std::memory_order_relaxed);
-
 }
 
 void MandelbrotCPURender::CleanupMainWorker()
@@ -107,7 +117,7 @@ void MandelbrotCPURender::MainWorker(const RenderConfig copyConfig)
 	std::vector<std::thread> poolThread;
 	for (int i = 0; i < maxThread; ++i)
 	{
-		poolThread.emplace_back(std::thread(&MandelbrotCPURender::Worker, this, std::ref(copyConfig), i, maxThread));
+		poolThread.emplace_back(std::thread(&MandelbrotCPURender::WorkerColorDraw, this, std::ref(copyConfig), i, maxThread));
 	}
 	for (std::thread& th : poolThread)
 	{
@@ -117,7 +127,7 @@ void MandelbrotCPURender::MainWorker(const RenderConfig copyConfig)
 	m_isBusy.store(false, std::memory_order_relaxed);
 }
 
-void MandelbrotCPURender::Worker(const RenderConfig& refConfig, const int workerID, const int threadCount)
+void MandelbrotCPURender::WorkerColorDraw(const RenderConfig& refConfig, const int workerID, const int threadCount)
 {
 	const double scale = 1.0 / refConfig.m_zoom;
 	const size_t width = static_cast<unsigned long long>(refConfig.m_windowSize.width);
@@ -125,7 +135,8 @@ void MandelbrotCPURender::Worker(const RenderConfig& refConfig, const int worker
 	const math::vec2d resolution = math::toVec2d(refConfig.m_windowSize);
 	const math::vec2d position = math::toVec2d(refConfig.m_position);
 	const float threshold = refConfig.m_threshold;
-	const float maxIterations = static_cast<float>(refConfig.m_maxIterations);
+	const float logthreshold = std::log(threshold);
+	const int maxIterations = refConfig.m_maxIterations;
 
 	bool canceled = false;
 
@@ -142,32 +153,36 @@ void MandelbrotCPURender::Worker(const RenderConfig& refConfig, const int worker
 			math::vec2d z;
 
 			double iterations = 0;
+			double lastDotProduct = 0;
 
-			double c2 = dot(c, c);
+			const double c2 = dot(c, c);
 			// skip computation inside M1 - http://iquilezles.org/www/articles/mset_1bulb/mset1bulb.htm
 			if ((256.0 * c2 * c2 - 96.0 * c2 + 32.0 * c.x - 3.0 < 0.0)
 				// skip computation inside M2 - http://iquilezles.org/www/articles/mset_2bulb/mset2bulb.htm
-				&& (16.0 * (c2 + 2.0 * c.x + 1.0) - 1.0 < 0.0))
+				|| (16.0 * (c2 + 2.0 * c.x + 1.0) - 1.0 < 0.0))
 			{
-				iterations = 0;
+				iterations = 0.;
 			}
 			else
 			{
 				while (iterations <= maxIterations)
 				{
 					// Z -> Z² + c
-					z = math::vec2d(std::pow(z.x, 2) - std::pow(z.y, 2), 2 * z.x * z.y) + c;
+					z = math::vec2d(z.x * z.x - z.y * z.y, 2 * z.x * z.y);
+					z += c;
+					//
 
-					if (math::dot(z, z) > threshold)
+					lastDotProduct = math::dot(z, z);
+					if (lastDotProduct > threshold)
 						break;
 
 					++iterations;
 				}
 			}
 
-			if (iterations < maxIterations) 
+			if (iterations != 0 && iterations < maxIterations)
 			{
-				iterations += 1 - std::log(math::dot(z, z)) / std::log(threshold);
+				iterations += 1 - std::log(lastDotProduct) / logthreshold;
 			}
 			else
 			{
@@ -185,31 +200,11 @@ void MandelbrotCPURender::Worker(const RenderConfig& refConfig, const int worker
 			const double g = std::lerp(color1[1], color2[1], fraction);
 			const double b = std::lerp(color1[2], color2[2], fraction);
 
-			if (x > width)
-			{
-				throw std::out_of_range("x position is invalid");
-			}
+			const size_t pos = (x + y * width) * s_sizeofRGB;
 
-			if (y > height)
-			{
-				throw std::out_of_range("y position is invalid");
-			}
-
-			const size_t pos = (x + y * width) * s_sizeofRGBA;
-
-			if ((pos + s_offesetA) < m_sizeData && (pos + s_offesetA) < m_maxSizeData)
-			{
-				m_bufferData[pos + s_offesetR] = static_cast<unsigned char>(std::round(r));
-				m_bufferData[pos + s_offesetG] = static_cast<unsigned char>(std::round(g));
-				m_bufferData[pos + s_offesetB] = static_cast<unsigned char>(std::round(b));
-				m_bufferData[pos + s_offesetA] = 255;
-			}
-			else
-			{
-				throw std::out_of_range("position is invalid");
-			}
-
-			
+			m_bufferData[pos + s_offesetR] = static_cast<unsigned char>(r);
+			m_bufferData[pos + s_offesetG] = static_cast<unsigned char>(g);
+			m_bufferData[pos + s_offesetB] = static_cast<unsigned char>(b);
 		}
 	}
 
