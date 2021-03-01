@@ -28,6 +28,7 @@ private:
 
 	void MainWorker(const RenderConfig copyConfig);
 	void WorkerColorDraw(const RenderConfig& refConfig, const int workerID, const int threadCount);
+	void WorkerGrayDraw(const RenderConfig& refConfig, const int workerID, const int threadCount);
 
 	void MakeBufferData(size_t size);
 

@@ -198,10 +198,13 @@ float get_distance_mandelbrot( in vec2 c )
 		m2 = dot(z,z);
 	}
 
-	// distance	
-	// d(c) = |Z|·log|Z|/|Z'|
-	float d = 0.5*sqrt(dot(z,z)/dot(dz,dz))*log(dot(z,z));
-	if( di>0.5 ) d=0.0;
+	// distance
+	float d = 0.0;
+	if( di <= 0.5 )
+	{
+		// d(c) = |Z|·log|Z|/|Z'|
+		d = 0.5*sqrt(dot(z,z)/dot(dz,dz))*log(dot(z,z));
+	}
 	
 	return d;
 }

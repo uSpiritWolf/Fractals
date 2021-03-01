@@ -2,6 +2,7 @@
 
 #include <stdexcept>
 #include <cmath>
+#include <algorithm>
 #include <gl/glew.h>
 
 #include "Palette.h"
@@ -115,9 +116,19 @@ void MandelbrotCPURender::MainWorker(const RenderConfig copyConfig)
 {
 	const int maxThread = std::thread::hardware_concurrency() - 1;
 	std::vector<std::thread> poolThread;
-	for (int i = 0; i < maxThread; ++i)
+	if (copyConfig.m_colorEnabled)
 	{
-		poolThread.emplace_back(std::thread(&MandelbrotCPURender::WorkerColorDraw, this, std::ref(copyConfig), i, maxThread));
+		for (int i = 0; i < maxThread; ++i)
+		{
+			poolThread.emplace_back(std::thread(&MandelbrotCPURender::WorkerColorDraw, this, std::ref(copyConfig), i, maxThread));
+		}
+	}
+	else
+	{
+		for (int i = 0; i < maxThread; ++i)
+		{
+			poolThread.emplace_back(std::thread(&MandelbrotCPURender::WorkerGrayDraw, this, std::ref(copyConfig), i, maxThread));
+		}
 	}
 	for (std::thread& th : poolThread)
 	{
@@ -155,7 +166,7 @@ void MandelbrotCPURender::WorkerColorDraw(const RenderConfig& refConfig, const i
 			double iterations = 0;
 			double lastDotProduct = 0;
 
-			const double c2 = dot(c, c);
+			const double c2 = math::dot(c, c);
 			// skip computation inside M1 - http://iquilezles.org/www/articles/mset_1bulb/mset1bulb.htm
 			if ((256.0 * c2 * c2 - 96.0 * c2 + 32.0 * c.x - 3.0 < 0.0)
 				// skip computation inside M2 - http://iquilezles.org/www/articles/mset_2bulb/mset2bulb.htm
@@ -210,6 +221,83 @@ void MandelbrotCPURender::WorkerColorDraw(const RenderConfig& refConfig, const i
 	if (canceled)
 	{
 		std::memset(m_bufferData.get(), 0, m_sizeData);
+	}
+}
+
+void MandelbrotCPURender::WorkerGrayDraw(const RenderConfig& refConfig, const int workerID, const int threadCount)
+{
+	const double scale = 1.0 / refConfig.m_zoom;
+	const size_t width = static_cast<unsigned long long>(refConfig.m_windowSize.width);
+	const size_t height = static_cast<unsigned long long>(refConfig.m_windowSize.height);
+	const math::vec2d resolution = math::toVec2d(refConfig.m_windowSize);
+	const math::vec2d position = refConfig.m_position;
+	const float threshold = refConfig.m_threshold;
+	const int maxIterations = refConfig.m_maxIterations;
+
+	bool canceled = false;
+
+	for (size_t y = workerID; y < height; y += threadCount)
+	{
+		if (canceled = m_cancelRequested.load(std::memory_order_relaxed))
+			break;
+
+		for (size_t x = 0; x < width; ++x)
+		{
+			math::vec2d coord(static_cast<double>(x), static_cast<double>(y));
+
+			math::vec2d c = scale * (2. * coord - resolution) / resolution.y - position;
+
+			double distance = 0.0f;
+			double c2 = math::dot(c, c);
+				// skip computation inside M1 - http://iquilezles.org/www/articles/mset_1bulb/mset1bulb.htm
+			if ((256.0 * c2 * c2 - 96.0 * c2 + 32.0 * c.x - 3.0 < 0.0)
+				// skip computation inside M2 - http://iquilezles.org/www/articles/mset_2bulb/mset2bulb.htm
+				|| (16.0 * (c2 + 2.0 * c.x + 1.0) - 1.0 < 0.0))
+			{
+				distance = 0.0f;
+			}
+			else
+			{
+
+				// iterate
+				double di = 1.0;
+				math::vec2d z;
+				double m2 = 0.0;
+				math::vec2d dz;
+				for (int i = 0; i < maxIterations; i++)
+				{
+					if (m2 > threshold)
+					{ 
+						di = 0.0; 
+						break;
+					}
+
+					// Z' -> 2·Z·Z' + 1
+					dz = 2.0 * math::vec2d(z.x * dz.x - z.y * dz.y, z.x * dz.y + z.y * dz.x) + math::vec2d(1.0, 0.0);
+
+					// Z -> Z² + c			
+					z = math::vec2d(z.x * z.x - z.y * z.y + c.x, 2 * z.x * z.y + c.y);
+
+					m2 = dot(z, z);
+				}
+
+				if (di <= 0.5)
+				{
+					// distance	
+					// d(c) = |Z|·log|Z|/|Z'|
+					distance = 0.5 * sqrt(dot(z, z) / dot(dz, dz)) * log(dot(z, z));
+				}
+			}
+
+			double result = std::clamp(pow(4.0 * distance / scale, 0.2), 0.0, 1.0);
+			int byte = static_cast<unsigned char>(result * 255);
+
+			const size_t pos = (x + y * width) * s_sizeofRGB;
+
+			m_bufferData[pos + s_offesetR] = static_cast<unsigned char>(byte);
+			m_bufferData[pos + s_offesetG] = static_cast<unsigned char>(byte);
+			m_bufferData[pos + s_offesetB] = static_cast<unsigned char>(byte);
+		}
 	}
 }
 
